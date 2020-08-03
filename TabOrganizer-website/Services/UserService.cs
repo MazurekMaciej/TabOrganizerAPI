@@ -55,6 +55,60 @@ namespace TabOrganizer_website.Services
             return user;
         }
 
+
+        public User GetById(int id)
+        {
+            return _context.Users.Find(id);
+        }
+
+        public IEnumerable<User> GetAll()
+        {
+            return _context.Users.ToList();
+        }
+
+        public User Create(User user, string password)
+        {
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            if(string.IsNullOrEmpty(password))
+                throw new ArgumentNullException(nameof(password));
+
+            if (_context.Users.SingleOrDefault(x => x.Username == user.Username) != null)
+                throw new RegisterException("Username : " + user.Username + " is already taken. ");
+
+            byte[] passwordHash;
+            byte[] passwordSalt;
+            CreatePasswordHash(password, out passwordHash, out passwordSalt);
+
+            user.PasswordHash = passwordHash;
+            user.PasswordSalt = passwordSalt;
+            user.Role = Role.User;
+
+            _context.Users.Add(user);
+
+            return user;
+        }
+
+        public void Update(User user, string password = null)
+        {
+            //automapper gonna do it
+        }
+
+        public void Delete(User user)
+        {
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            _context.Users.Remove(user);
+        }
+
+        public bool SaveChanges()
+        {
+            _context.SaveChanges();
+            return true;
+        }
+
         private static void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
         {
             if (password == null) throw new ArgumentNullException("password");
@@ -84,11 +138,6 @@ namespace TabOrganizer_website.Services
             }
 
             return true;
-        }
-
-        public User GetById(int id)
-        {
-            return _context.Users.Find(id);
         }
     }
 }
