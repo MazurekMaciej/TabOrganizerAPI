@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -15,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json.Serialization;
 using TabOrganizer_website.Data;
 using TabOrganizer_website.Helpers;
 using TabOrganizer_website.Services;
@@ -37,7 +39,10 @@ namespace TabOrganizer_website
                     Configuration.GetConnectionString("TabOrganizerConnection")));
 
             services.AddCors();
-            services.AddControllers();
+            services.AddControllers().AddNewtonsoftJson(s =>
+                s.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver());
+
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
@@ -46,6 +51,7 @@ namespace TabOrganizer_website
             //configure jwt authentication
             var appSettings = appSettingsSection.Get<AppSettings>();
             var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+
             services.AddAuthentication(x =>
             {
                 x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -54,6 +60,16 @@ namespace TabOrganizer_website
 
             .AddJwtBearer(x =>
             {
+                x.RequireHttpsMetadata = false;
+                x.SaveToken = true;
+                x.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
+
                 x.Events = new JwtBearerEvents
                 {
                     OnTokenValidated = context =>
@@ -69,18 +85,10 @@ namespace TabOrganizer_website
                         return Task.CompletedTask;
                     }
                 };
-                x.RequireHttpsMetadata = false;
-                x.SaveToken = true;
-                x.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false,
-                    ValidateAudience = false
-                };
             });
 
             services.AddScoped<IUserService, UserService>();
+
 
         }
 
@@ -94,15 +102,14 @@ namespace TabOrganizer_website
 
             app.UseHttpsRedirection();
 
+            app.UseRouting();
             app.UseCors(x => x
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
                 .AllowAnyHeader());
 
-            app.UseRouting();
-
+            app.UseAuthentication(); //must be before useauthorization
             app.UseAuthorization();
-            app.UseAuthentication();
 
             app.UseEndpoints(endpoints =>
             {

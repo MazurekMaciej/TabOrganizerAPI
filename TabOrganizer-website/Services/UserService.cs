@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TabOrganizer_website.Data;
 using TabOrganizer_website.Helpers;
+using TabOrganizer_website.Helpers.Exceptions;
 using TabOrganizer_website.Models;
 
 namespace TabOrganizer_website.Services
@@ -24,12 +26,12 @@ namespace TabOrganizer_website.Services
             _appSettings = appSettings.Value;
         }
 
-        public User Authenticate(string username, string password)
+        public async Task<User> Authenticate(string username, string password)
         {
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            if (string.IsNullOrEmpty(username) || string.IsNullOrWhiteSpace(password))
                 return null;
 
-            var user = _context.Users.SingleOrDefault(u => u.Username == username);
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
 
             if (user == null)
                 return null;
@@ -56,25 +58,27 @@ namespace TabOrganizer_website.Services
         }
 
 
-        public User GetById(int id)
+        public async Task<User> GetById(int id)
         {
-            return _context.Users.Find(id);
+            var user = await _context.Users.FindAsync(id);
+            return user;
         }
 
-        public IEnumerable<User> GetAll()
+        public async Task<IEnumerable<User>> GetAll()
         {
-            return _context.Users.ToList();
+            var users = await _context.Users.ToListAsync();
+            return users;
         }
 
-        public User Create(User user, string password)
+        public async Task<User> Create(User user, string password)
         {
             if (user == null)
-                throw new ArgumentNullException(nameof(user));
+                throw new UserNotFoundException("User not found");
 
-            if(string.IsNullOrEmpty(password))
+            if(string.IsNullOrWhiteSpace(password))
                 throw new ArgumentNullException(nameof(password));
 
-            if (_context.Users.SingleOrDefault(x => x.Username == user.Username) != null)
+            if (await _context.Users.SingleOrDefaultAsync(x => x.Username == user.Username) != null)
                 throw new RegisterException("Username : " + user.Username + " is already taken. ");
 
             byte[] passwordHash;
@@ -85,28 +89,45 @@ namespace TabOrganizer_website.Services
             user.PasswordSalt = passwordSalt;
             user.Role = Role.User;
 
-            _context.Users.Add(user);
+            await _context.Users.AddAsync(user);
 
             return user;
         }
 
-        public void Update(User user, string password = null)
+        public async Task Update(User user, string password = null)
         {
-            //automapper gonna do it
+            var userFromDb = await GetById(user.Id);
+
+            if (userFromDb == null)
+                throw new UserNotFoundException("User not found");
+
+            userFromDb.FirstName = user.FirstName;
+            userFromDb.LastName = user.LastName;
+            
+            if(!string.IsNullOrWhiteSpace(password))
+            {
+                byte[] passwordHash, passwordSalt;
+                CreatePasswordHash(password, out passwordHash, out passwordSalt);
+
+                user.PasswordHash = passwordHash;
+                user.PasswordSalt = passwordSalt;
+            }
+            await Task.Run(() => _context.Users.Update(userFromDb));
+
         }
 
-        public void Delete(User user)
+        public async Task Delete(int id)
         {
+            var user = await GetById(id);
             if (user == null)
-                throw new ArgumentNullException(nameof(user));
+                throw new UserNotFoundException("User not found");
 
-            _context.Users.Remove(user);
+            await Task.Run(() =>_context.Users.Remove(user));
         }
-
-        public bool SaveChanges()
+        
+        public async Task<bool> Save()
         {
-            _context.SaveChanges();
-            return true;
+            return (await _context.SaveChangesAsync() >= 0);
         }
 
         private static void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
