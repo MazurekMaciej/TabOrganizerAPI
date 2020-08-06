@@ -15,6 +15,14 @@ namespace TabOrganizer_website.Helpers
             CreateMap<User, UserDto>();
             CreateMap<UserDto, User>();
             CreateMap<UserUpdateDto, User>();
+
+            CreateMap<Container, ContainerReadDto>();
+            CreateMap<ContainerReadDto, Container>();
+
+            //CreateMap<Container, ContainerUpdateDto>();
+            CreateMap<ContainerUpdateDto, Container>();
+
+            CreateMap<ContainerCreateDto, Container>();
         }
     }
 }

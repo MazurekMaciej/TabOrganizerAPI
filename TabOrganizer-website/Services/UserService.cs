@@ -17,7 +17,7 @@ namespace TabOrganizer_website.Services
 {
     public class UserService : IUserService
     {
-        private DataContext _context;
+        private readonly DataContext _context;
         private readonly AppSettings _appSettings;
 
         public UserService(DataContext dataContext, IOptions<AppSettings> appSettings)
@@ -34,10 +34,10 @@ namespace TabOrganizer_website.Services
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
 
             if (user == null)
-                return null;
+                throw new AuthenticationException("Username : " + username + " does not exist.");
 
             if (!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
-                return null;
+                throw new AuthenticationException("Passord is incorrect. ");
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
@@ -89,7 +89,7 @@ namespace TabOrganizer_website.Services
             user.PasswordSalt = passwordSalt;
             user.Role = Role.User;
 
-            await _context.Users.AddAsync(user);
+            _context.Users.Add(user);
 
             return user;
         }
@@ -112,7 +112,7 @@ namespace TabOrganizer_website.Services
                 user.PasswordHash = passwordHash;
                 user.PasswordSalt = passwordSalt;
             }
-            await Task.Run(() => _context.Users.Update(userFromDb));
+             _context.Users.Update(userFromDb);
 
         }
 
@@ -122,7 +122,7 @@ namespace TabOrganizer_website.Services
             if (user == null)
                 throw new UserNotFoundException("User not found");
 
-            await Task.Run(() =>_context.Users.Remove(user));
+             _context.Users.Remove(user);
         }
         
         public async Task<bool> Save()

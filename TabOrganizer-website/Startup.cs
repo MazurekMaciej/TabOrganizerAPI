@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Configuration;
 using System.Linq;
 using System.Text;
@@ -72,23 +73,23 @@ namespace TabOrganizer_website
 
                 x.Events = new JwtBearerEvents
                 {
-                    OnTokenValidated = context =>
+                    OnTokenValidated = async context =>
                     {
                         var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
                         var userId = int.Parse(context.Principal.Identity.Name);
-                        var user = userService.GetById(userId);
+                        var user = await userService.GetById(userId);
                         if (user == null)
                         {
                             //return unauthorized if user no longer exists
                             context.Fail("Unauthorized");
                         }
-                        return Task.CompletedTask;
+                        //return Task.CompletedTask;
                     }
                 };
             });
 
             services.AddScoped<IUserService, UserService>();
-
+            services.AddScoped<IContainerService, ContainerService>();
 
         }
 

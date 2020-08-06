@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Authentication;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
@@ -31,20 +32,28 @@ namespace TabOrganizer_website.Controllers
         [HttpPost("authenticate", Name = nameof(Authenticate))]
         public async Task<IActionResult> Authenticate([FromBody] UserDto userDto)
         {
-            var user = await _userService.Authenticate(userDto.Username, userDto.Password);
 
-            if (user == null)
-                return BadRequest(new { message = "Username or password is incorrect" });
-
-            return Ok(new //return user info w/o password
+            try
             {
-                Id = user.Id,
-                Username = user.Username,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Role = user.Role,
-                Token = user.Token
-            });
+                var user = await _userService.Authenticate(userDto.Username, userDto.Password);
+
+                if (user == null)
+                    return BadRequest(new { message = "Username or password is incorrect" });
+
+                return Ok(new //return user info w/o password
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Role = user.Role,
+                    Token = user.Token
+                });
+            }
+            catch (AuthenticationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [AllowAnonymous]
@@ -135,7 +144,7 @@ namespace TabOrganizer_website.Controllers
                 return NotFound();
 
             await _userService.Delete(id);
-            if (!_userService.Save().Result)
+            if (!await _userService.Save())//????
                 throw new Exception("Deleting user failed on save.");
 
             return NoContent();
