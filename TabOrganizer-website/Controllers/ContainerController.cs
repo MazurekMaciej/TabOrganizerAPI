@@ -28,10 +28,10 @@ namespace TabOrganizer_website.Controllers
 
         // GET: api/containers/
         [HttpGet(Name = nameof(GetAllContainers))]
-        public IActionResult GetAllContainers()
+        public async Task<IActionResult> GetAllContainers()
         {
             int currentUserId = int.Parse(User.Identity.Name);
-            var containers = _containerService.GetAll(currentUserId);
+            var containers = await _containerService.GetAll(currentUserId);
 
             if (containers != null)
                 return Ok(_mapper.Map<IEnumerable<ContainerReadDto>>(containers));
@@ -113,7 +113,7 @@ namespace TabOrganizer_website.Controllers
             _containerService.Delete(existingContainer);
 
             if (!_containerService.Save())
-                throw new AppException("Updating a container failed on save.");
+                throw new AppException("Deleting a container failed on save.");
 
             return NoContent();
         }

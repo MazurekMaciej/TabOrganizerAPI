@@ -20,9 +20,9 @@ namespace TabOrganizer_website.Services
             _context = dataContext;
         }
 
-        public IEnumerable<Container> GetAll(int userId)
+        public async Task<IEnumerable<Container>> GetAll(int userId)
         {
-            return _context.Containers.Where(c => c.UserId == userId).ToList();
+            return await _context.Containers.Where(c => c.UserId == userId).ToListAsync();
         }
 
         public async Task<Container> GetContainerById(int userId, int id)
