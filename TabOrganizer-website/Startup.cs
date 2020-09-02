@@ -17,6 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using TabOrganizer_website.Data;
 using TabOrganizer_website.Helpers;
@@ -41,7 +42,11 @@ namespace TabOrganizer_website
 
             services.AddCors();
             services.AddControllers().AddNewtonsoftJson(s =>
-                s.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver());
+            {
+                s.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                s.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+            });
+        
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 

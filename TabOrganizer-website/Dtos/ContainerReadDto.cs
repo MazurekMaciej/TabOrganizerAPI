@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TabOrganizer_website.Models;
 
 namespace TabOrganizer_website.Dtos
 {
@@ -12,5 +13,6 @@ namespace TabOrganizer_website.Dtos
         public string Description { get; set; }
         public DateTime DateCreation { get; set; }
 
+        public IList<Website> Websites { get; set; }
     }
 }

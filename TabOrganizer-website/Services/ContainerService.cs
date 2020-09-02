@@ -22,7 +22,7 @@ namespace TabOrganizer_website.Services
 
         public async Task<IEnumerable<Container>> GetAll(int userId)
         {
-            return await _context.Containers.Where(c => c.UserId == userId).ToListAsync();
+            return await _context.Containers.Include(c=>c.Websites).Where(c => c.UserId == userId).ToListAsync();
         }
 
         public async Task<Container> GetContainerById(int userId, int id)
